@@ -4,28 +4,7 @@
 #include <vector>
 #include <memory>
 
-/*
-Expression ----->
-				v
-				v
-				v
-			   /|\
-			  / | \
-			 /  |  \
-			/	|	\
-		   /	|	 \
-		  /		|	  \
-	  [Expr] [BinOps] [Expr]
-	  	|		|		|
-	  	|		|		|
-	  	|	   "+"		|
-	  [Int]			  [Int]
-	  	|				|
-	  	|				|
-	  	3				4
-*/
-
-/////////////////////////////////
+/*Tree ascii pic broke*/
 
 class TreeNode {
 protected:
