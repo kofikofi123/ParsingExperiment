@@ -40,7 +40,7 @@ void JSEngine::doFile(const char* filename){
 		std::cout << *i << std::endl;
 	}
 
-	//ObjectCreate(nullptr, nullptr);
+	ObjectCreate(nullptr);
 	delete tokens;
 	//td::cout << std::hex << std::showbase << str.char32At(4) << std::endl;
 	delete[] content;

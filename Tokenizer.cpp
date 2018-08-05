@@ -47,7 +47,7 @@ std::list<std::shared_ptr<Token>>* Tokenizer::tokenize(const icu::UnicodeString*
 			if (isIDStart()){
 				appendToken(currentInput);
 			}else if (isIDContinue()){
-				reconsume = true;;
+				reconsume = true;
 				currentState = TokenizerStates::IDENTIFER_PART;
 			}else{
 				emitToken(tokenList);
@@ -60,6 +60,8 @@ std::list<std::shared_ptr<Token>>* Tokenizer::tokenize(const icu::UnicodeString*
 				appendToken(currentInput);
 			}else{
 				emitToken(tokenList);
+				currentState = TokenizerStates::NORMAL;
+				reconsume = true;
 			}
 		}
 

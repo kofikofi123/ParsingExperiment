@@ -3,12 +3,18 @@
 #include "JSType.h"
 
 
-ECMAObject* ObjectCreate(ECMAObject* proto, std::list<ECMAString*>* list){
+ECMAObject* ObjectCreate(ECMAObject* proto, std::list<const char*>& list){
 	ECMAObject* obj = new ECMAObject();
-	//obj->internalSlots[std::make_shared<ECMAString>(convertASCII("Yo"))] = nullptr;
-	std::shared_ptr<ECMAString> p(convertASCII("Hero"));
+	obj->internalSlots["Yo"] = nullptr;
 
-	//std::cout << *p << std::endl;
+	delete obj;
+	return nullptr;
+}
+
+ECMAObject* ObjectCreate(ECMAObject* proto){
+	ECMAObject* obj = new ECMAObject();
+	obj->internalSlots["Yo"] = nullptr;
+
 
 	delete obj;
 	return nullptr;

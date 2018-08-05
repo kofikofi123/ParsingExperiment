@@ -13,27 +13,39 @@ class ECMAObject;
 
 enum class ECMAValueType {String=0,Number,Bool,Object, Null, Undefined};
 
-struct ECMAValue {
-	ECMAValueType type;
+class ECMAValue {
+
 	union {
 		ECMAString* stringVal;
 		ECMANumber numberVal;
 		ECMABool boolValue;
 		ECMAObject* objectValue;
 	}value;
+public:
+	ECMAValue(ECMABool);
+	ECMAValue(ECMANumber);
+	ECMAValue(ECMAString*);
+	ECMAValue(ECMAObject*);
+
+
+	auto getValue();
+	ECMAValueType getType();
 };
 
 class ECMAObject {
-	std::map<std::shared_ptr<ECMAString>, ECMAValue*> internalSlots;
+	std::map<const char*, ECMAValue*> internalSlots;
 
 public:
 	ECMAObject(){}
-	friend ECMAObject* ObjectCreate(ECMAObject*, std::list<ECMAString*>*);
+
+
+	friend ECMAObject* ObjectCreate(ECMAObject*);
+	friend ECMAObject* ObjectCreate(ECMAObject* , std::list<const char*>&);
 };
 
-ECMAObject* ObjectCreate(ECMAObject*, std::list<ECMAString*>*);
 ECMAString* convertASCII(const char*);
-
+ECMAObject* ObjectCreate(ECMAObject* , std::list<const char*>&);
+ECMAObject* ObjectCreate(ECMAObject*);
 
 
 #endif
