@@ -37,6 +37,11 @@ class Tokenizer {
 	bool isIDStart(void);
 	bool isIDContinue(void);
 	bool isSpecialID(void);
+	bool isHex(void);
+
+	bool inRange(UChar32, UChar32, UChar32);
+
+	uint8_t toHex(UChar32);
 
 	UChar32 rewriteSpecialID(void);
 

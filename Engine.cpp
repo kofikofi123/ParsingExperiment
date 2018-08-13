@@ -2,7 +2,7 @@
 #include <iostream>
 #include <fstream>
 #include "Engine.h"
-#include "JSType.h"
+#include "Internals.h"
 #include "unicode/unistr.h"
 
 JSEngine::JSEngine(){
@@ -29,7 +29,7 @@ const char* JSEngine::readFile(const char* filename){
 	return buffer;
 }
 
-void JSEngine::doFile(const char* filename){
+void JSEngine::doFile(const char* filename, JSType type){
 	const char* content = readFile(filename);
 	
 	icu::UnicodeString str(content);
@@ -40,7 +40,7 @@ void JSEngine::doFile(const char* filename){
 		std::cout << *i << std::endl;
 	}
 
-	ObjectCreate(nullptr);
+	//ObjectCreate(nullptr);
 	delete tokens;
 	//td::cout << std::hex << std::showbase << str.char32At(4) << std::endl;
 	delete[] content;

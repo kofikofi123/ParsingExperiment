@@ -31,6 +31,7 @@ std::list<std::shared_ptr<Token>>* Tokenizer::tokenize(const icu::UnicodeString*
 	reset();
 	std::list<TokenPtr>* tokenList = new std::list<TokenPtr>(0);
 
+
 	while (!stream->isFinished()){
 		if (currentState == TokenizerStates::NORMAL){
 
@@ -49,6 +50,8 @@ std::list<std::shared_ptr<Token>>* Tokenizer::tokenize(const icu::UnicodeString*
 			}else if (isIDContinue()){
 				reconsume = true;
 				currentState = TokenizerStates::IDENTIFER_PART;
+			}else if (isSpecialID()){
+				appendToken(rewriteSpecialID());
 			}else{
 				emitToken(tokenList);
 				currentState = TokenizerStates::NORMAL;
@@ -86,13 +89,43 @@ void Tokenizer::grabCurrent(void){
 	currentInput = stream->getCurrent();
 }
 
-UChar32 Tokenizer::rewriteSpecialID(void){
-	skipForward(2);
-	if (currentInput == 0x7B){/*{*/
+bool Tokenizer::isSpecialID(void){
+	stream->save();
+	bool output = false;
+	if (currentInput == 0x5C){
 		advance();
+		if (currentInput == 0x75)
+			output = true;
 	}
 
-	return 0;
+	stream->restore();
+
+	return output;
+}
+
+uint8_t Tokenizer::toHex(UChar32 v){
+	return 0; //temp
+}
+UChar32 Tokenizer::rewriteSpecialID(void){
+	skipForward(2);
+	UChar32 output;
+	if (currentInput == 0x7B){/*{*/
+		advance();
+		while (currentInput != 0x7B){
+			if (!isHex()){/*throwSyntaxError("This is a syntax error");*/ return 0;}
+			output = (output << 4) | toHex(currentInput);
+			advance();
+		}
+	}else{
+		uint8_t i = 0;
+		while (i++ < 4){
+			if (!isHex()){/*throwSyntaxError("This is a syntax error");*/ return 0;}
+			output = (output << 4) | toHex(currentInput);
+			advance();
+		}
+	}
+
+	return output;
 }
 
 bool Tokenizer::isWhitepace(void){
@@ -112,6 +145,14 @@ bool Tokenizer::isIDContinue(void){
 	if (currentInput == 0x24 || currentInput == 0x5C || currentInput == 0x200C || currentInput == 0x200D)
 		return true;
 	return u_hasBinaryProperty(currentInput, UCHAR_ID_CONTINUE);
+}
+
+bool Tokenizer::isHex(void){
+	return (inRange(currentInput, 0x30, 0x39) || (inRange(currentInput | 0x20, 0x61, 0x66)));
+}
+
+bool Tokenizer::inRange(UChar32 val, UChar32 min, UChar32 max){
+	return (val >= min) && (val <= max);
 }
 
 void Tokenizer::advance(void){
