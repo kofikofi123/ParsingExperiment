@@ -33,14 +33,6 @@ void GC::mark(){
 	std::copy(objects.begin(), objects.end(), std::back_inserter(white));
 
 	do {
-		if (grey.size() > 0){
-			std::copy(grey.begin(), grey.end(), std::back_inserter(black));
-			grey.erase(grey.begin(), grey.end());
-		}
-		/*
-		for (GCHandle* i : tempRoots){
-			if (i->get() == tempRoots)
-				grey.push_back(tempRoots);
-		}*/
+		
 	}while(grey.size() > 1);
 }
