@@ -11,6 +11,7 @@ int main(int argc, char* argv[]){
 		return -1;
 	}
 	{
+		/*No GC yet*/
 		DeclEnvRecord r;
 		std::shared_ptr<CompletionRecord> comp;
 
