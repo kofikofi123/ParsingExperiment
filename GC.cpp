@@ -12,7 +12,7 @@ GC::GC(std::size_t s){
 
 GC::~GC(){
 	for (auto i : objects){
-		delete i; //change this can't assume
+		delete i; //change this can't assume, or maybe it can through only allocation through factories
 	}
 }
 
