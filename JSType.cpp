@@ -2,21 +2,23 @@
 #include <unicode/ustream.h>
 #include "JSType.h"
 
+//Will rewrite to fit with GC
+
 
 ECMAObject* ObjectCreate(ECMAObject* proto, std::list<const char*>& list){
-	ECMAObject* obj = new ECMAObject();
-	obj->internalSlots["Yo"] = nullptr;
+	//ECMAObject* obj = new ECMAObject();
+	//obj->internalSlots["Yo"] = nullptr;
 
-	delete obj;
+	//delete obj;
 	return nullptr;
 }
 
 ECMAObject* ObjectCreate(ECMAObject* proto){
-	ECMAObject* obj = new ECMAObject();
-	obj->internalSlots["Yo"] = nullptr;
+	//ECMAObject* obj = new ECMAObject();
+	//obj->internalSlots["Yo"] = nullptr; not yet
 
 
-	delete obj;
+	//delete obj;
 	return nullptr;
 }
 
@@ -45,11 +47,4 @@ std::ostream& operator<<(std::ostream& stream, const ECMAValue& value){
 	}
 
 	return stream;
-}
-
-
-std::weak_ptr<ECMAValue> ECMAValueType::newValue(ECMAValue* val){
-	std::shared_ptr<ECMAValue> ptr(val);
-	pool.push_back(val);
-	return std::weak_ptr<ECMAValue>(ptr);	
 }

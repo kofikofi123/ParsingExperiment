@@ -34,7 +34,11 @@ std::shared_ptr<CompletionRecord> DeclEnvRecord::GetBindingValue(ECMAString* n, 
 	bindingObj* obj = bindings[n];
 
 	if (!obj->isInit){}
-	return returnValue(obj->value);
+	return std::shared_ptr<CompletionRecord>(returnValue(obj->value));
+}
+
+CompletionRecord* returnValue(ECMAValue* val){
+	return new CompletionRecord(CRecordType::NORMAL, val, nullptr);
 }
 
 ECMABool DeclEnvRecord::DeleteBinding(ECMAString* s){

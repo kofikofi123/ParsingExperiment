@@ -4,26 +4,22 @@
 #include <cstdint>
 #include "Engine.h"
 #include "Internals.h"
-
+#include "GC.h"
 
 int main(int argc, char* argv[]){
 	if (argc > 2){
 		return -1;
 	}
 	{
-		/*No GC yet*/
-		DeclEnvRecord r;
-		std::shared_ptr<CompletionRecord> comp;
+		GC myGC;
 
-		std::shared_ptr<ECMAString> test = convertASCII("A");
+		GCHandle& handle = myGC.registerECMAValue(new ECMAValue(true));
+		GCHandle& handle2 = myGC.registerECMAValue(new ECMAValue(32.0));
 
-		comp = r.CreateMutableBinding(test.get(), true);
-		comp = r.InitializeBinding(test.get(), val);
+		handle = handle2;
 
-
-		ECMAValue* va = r.GetBindingValue(test.get(), true);
-
-		std::cout << *va << std::endl;
+		myGC.markFull();
+		myGC.debug();
 	}
 	JSEngine engine;
 

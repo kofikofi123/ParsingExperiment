@@ -32,7 +32,7 @@ protected:
 
 	//void resetLastError(){lastError = std::shared_ptr<CompletionRecord>();}
 public:
-	EnvRecord(): lastError(std::shared_ptr<CompletionRecord>()){}
+	EnvRecord(){}
 	~EnvRecord(){}
 	EnvRecord* globalEnv;
 
@@ -42,7 +42,7 @@ public:
 	virtual std::shared_ptr<CompletionRecord> InitializeBinding(ECMAString*, ECMAValue*)=0;
 	//virtual std::shared_ptr<CompletionRecord> SetMutableBinding(ECMAString*, ECMAValue*, ECMABool);
 	virtual std::shared_ptr<CompletionRecord> GetBindingValue(ECMAString*, ECMABool)=0;
-	virtual std::shared_ptr<CompletionRecord> DeleteBinding(ECMAString*)=0;
+	virtual ECMABool DeleteBinding(ECMAString*)=0;
 	//virtual ECMABool HasThisBinding();
 	//virtual ECMABool HasSuperBinding();
 	//virtual ECMAValue* WithBaseObject(); /*Will/Willnot change*/
