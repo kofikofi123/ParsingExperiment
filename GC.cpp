@@ -71,8 +71,4 @@ void GC::markGreyRoots(std::vector<GCHandle*>& pRoots){
 			white.erase(p);
 		}
 	}
-
-	for (auto i : grey){
-		std::cout << *i << std::endl;
-	}
 }
