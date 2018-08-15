@@ -3,7 +3,7 @@
 #include "GC.h"
 
 /*Not done*/
-/*Test what I have*/
+/*Tested what I have*/
 
 
 GC::GC(std::size_t s){
