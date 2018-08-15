@@ -5,13 +5,17 @@
 #include <list>
 #include <memory>
 #include <unicode/unistr.h>
+#include "GC.h"
 
 typedef icu::UnicodeString ECMAString;
 typedef double ECMANumber;
 typedef bool ECMABool;
 class ECMAObject;
 
-enum class ECMAValueType {String=0,Number,Bool,Object, Null, Undefined};
+class GC;
+class GCHandle;
+
+enum class ECMAValueType {String,Number,Bool,Object, Null, Undefined, Symbol};
 
 class ECMAValue {
 	ECMAValueType type;
@@ -25,28 +29,29 @@ public:
 	ECMAValue(ECMABool v): type(ECMAValueType::Bool){value.boolVal=v;}
 	ECMAValue(ECMANumber v): type(ECMAValueType::Number){value.numberVal = v;}
 	ECMAValue(ECMAString*);
-	ECMAValue(ECMAObject*);
+	ECMAValue(ECMAObject* v): type(ECMAValueType::Object){value.objectVal=v;}
 
 
 	ECMANumber getNumber() const;
 	ECMABool getBool() const;
-	ECMAValueType getType() const;
+	ECMAObject* getObject() const;
+	ECMAValueType getType(){return type;}
 
 	friend std::ostream& operator<<(std::ostream&, const ECMAValue&);
 };
 
 class ECMAObject {
-	std::map<const char*, ECMAValue*> internalSlots;
+	friend class GC;
+	std::map<GCHandle*, GCHandle*> internalSlots;
 
 public:
-	ECMAObject(ECMAObject*);
-	ECMAObject(ECMAObject*, std::list<const char*>&);
+	ECMAObject(GCHandle*);
+	ECMAObject(GCHandle*, std::list<const char*>&);
 
-};
+	void setInternalSlot(GCHandle*, GCHandle*);
+	GCHandle* getInternalSlot(GCHandle*);
+};	
 
-std::shared_ptr<ECMAString> convertASCII(const char*);
-//ECMAObject* ObjectCreate(ECMAObject* , std::list<const char*>&);
-//ECMAObject* ObjectCreate(ECMAObject*);
-
+GCHandle& convertASCII(const char*);
 
 #endif

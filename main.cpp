@@ -20,6 +20,7 @@ int main(int argc, char* argv[]){
 
 		myGC.markFull();
 		myGC.debug();
+		myGC.sweep();
 	}
 	JSEngine engine;
 

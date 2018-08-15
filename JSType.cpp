@@ -4,26 +4,9 @@
 
 //Will rewrite to fit with GC
 
-
-ECMAObject* ObjectCreate(ECMAObject* proto, std::list<const char*>& list){
-	//ECMAObject* obj = new ECMAObject();
-	//obj->internalSlots["Yo"] = nullptr;
-
-	//delete obj;
-	return nullptr;
-}
-
-ECMAObject* ObjectCreate(ECMAObject* proto){
-	//ECMAObject* obj = new ECMAObject();
-	//obj->internalSlots["Yo"] = nullptr; not yet
-
-
-	//delete obj;
-	return nullptr;
-}
-
-std::shared_ptr<ECMAString> convertASCII(const char* ascii){
-	return std::shared_ptr<ECMAString>(new icu::UnicodeString(ascii, "ASCII"));
+void ECMAObject::setInternalSlot(GCHandle* key, GCHandle* value){
+	if (key == nullptr) return;
+	internalSlots[key] = value;
 }
 
 ECMANumber ECMAValue::getNumber() const{
@@ -33,6 +16,12 @@ ECMANumber ECMAValue::getNumber() const{
 ECMABool ECMAValue::getBool() const{
 	return value.boolVal;
 }
+
+ECMAObject* ECMAValue::getObject() const {
+	return value.objectVal;
+}
+
+
 
 std::ostream& operator<<(std::ostream& stream, const ECMAValue& value){
 	switch(value.type){
@@ -48,3 +37,5 @@ std::ostream& operator<<(std::ostream& stream, const ECMAValue& value){
 
 	return stream;
 }
+
+
