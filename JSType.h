@@ -63,6 +63,7 @@ public:
 	ECMAString(const char* s): ECMAString(new icu::UnicodeString(s, nullptr)){}
 	ECMAString(icu::UnicodeString* s): val(s){}
 
+	~ECMAString(){delete val;}//possible conflicts
 
 
 	icu::UnicodeString* Value() const {return val;}
