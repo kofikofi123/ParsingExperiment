@@ -6,7 +6,9 @@
 #include "unicode/unistr.h"
 
 JSEngine::JSEngine(){
-	tokenizer = new Tokenizer();	
+	//pGC = new GC();	
+	//factory = new JSFactory(pGC);
+	tokenizer = new Tokenizer();
 }
 
 const char* JSEngine::readFile(const char* filename){
@@ -36,6 +38,9 @@ void JSEngine::doFile(const char* filename, JSType type){
 
 	std::list<TokenPtr>* tokens = tokenizer->tokenize(&str);
 
+	/*if (tokenizer->errors.size() > 0){
+		std::cout << "Errors" << std::endl;
+	}*/
 	for (auto i : *tokens){
 		std::cout << *i << std::endl;
 	}
@@ -45,8 +50,22 @@ void JSEngine::doFile(const char* filename, JSType type){
 	//td::cout << std::hex << std::showbase << str.char32At(4) << std::endl;
 	delete[] content;
 }	
+/*
+void JSEngine::mark(){
+	pGC->markFull();
+}
+
+void JSEngine::debug(){
+	pGC->debug();
+}
+
+void JSEngine::sweep(){
+	pGC->sweep();
+}*/
 
 
 JSEngine::~JSEngine(){
+	//delete factory;
+	//delete pGC;
 	delete tokenizer;
 }

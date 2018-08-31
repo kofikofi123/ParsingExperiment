@@ -3,10 +3,21 @@
 
 #include <unicode/unistr.h>
 #include <memory>
+#include "GC.h"
 #include "Stream.h"
+
+#define TOKEN_ISUNIESC (1 << 0)
+
+
+class JSFactory;
+
+template<class T>
+class GCHandle;
 
 struct Token;
 enum class TokenType;
+
+
 
 typedef std::shared_ptr<Token> TokenPtr;
 
@@ -21,6 +32,8 @@ class Tokenizer {
 		IDENTIFER_START = 1,
 		IDENTIFER_PART = 2,
 	} currentState;
+	JSFactory* factory;
+	
 
 	void reset(void);
 	void next(void);
@@ -52,20 +65,27 @@ class Tokenizer {
 	void appendToken(UChar32);
 	//Token* createToken(TokentType, const icu::UnicodeString*);
 public:
-	Tokenizer();
+	Tokenizer(/*JSFactory**/);
 	~Tokenizer();
 
 	std::list<TokenPtr>* tokenize(const icu::UnicodeString*);
+
+	//std::list<GCHandle*> errors;
 };
 
 struct Token {
 	TokenType type;
 	icu::UnicodeString* source;
+	uint32_t flag;
 
 	Token(TokenType typ): type(typ), source(nullptr){}
 	Token(TokenType typ, icu::UnicodeString* buf): type(typ), source(buf){};
 
-	Token& operator+=(UChar32);
+	void setFlag(uint32_t);
+	void clearFlag(uint32_t);
+	uint8_t getFlag(uint32_t);
+
+	//Token& operator+=(UChar32);
 	friend std::ostream& operator<<(std::ostream&, const Token&);
 	~Token(void){delete source;}
 };

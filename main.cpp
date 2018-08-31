@@ -10,20 +10,27 @@ int main(int argc, char* argv[]){
 	if (argc > 2){
 		return -1;
 	}
+	JSEngine engine;
+
 	{
 		GC myGC;
 
-		GCHandle& handle = myGC.registerECMAValue(new ECMAValue(true));
-		GCHandle& handle2 = myGC.registerECMAValue(new ECMAValue(32.0));
 
-		handle = handle2;
+		GCHandle<ECMAValue>& v0 = myGC.registerECMAValue(new ECMANumber(32.0));
+		GCHandle<ECMAValue>& v1 = myGC.registerECMAValue(new ECMAString("hello wrodl"));
 
 		myGC.markFull();
 		myGC.debug();
 		myGC.sweep();
-	}
-	JSEngine engine;
 
-	engine.doFile(argv[1]);
+		std::cout << "-----------------------" << std::endl;
+
+		v1 = v0;
+
+		myGC.markFull();
+		myGC.debug();
+
+	}
+	//engine.doFile(argv[1]);
 	return 0;
 }

@@ -14,7 +14,6 @@ uint32_t Stream::getCurrent(void){
 }
 
 void Stream::next(std::size_t inc){
-	if (isFinished()) return;
 	position = position + inc;
 
 	if (isFinished()) position = (size);

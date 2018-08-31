@@ -4,38 +4,70 @@
 
 //Will rewrite to fit with GC
 
-void ECMAObject::setInternalSlot(GCHandle* key, GCHandle* value){
-	if (key == nullptr) return;
-	internalSlots[key] = value;
+
+inline ECMAValueType typeof(ECMAValue* v){
+	return v->Type();
 }
 
-ECMANumber ECMAValue::getNumber() const{
-	return value.numberVal;
-}
+bool typeofIsPrimative(ECMAValue* v){
+	if (v == nullptr) return false; //  :(
+	bool result = false;
 
-ECMABool ECMAValue::getBool() const{
-	return value.boolVal;
-}
-
-ECMAObject* ECMAValue::getObject() const {
-	return value.objectVal;
-}
-
-
-
-std::ostream& operator<<(std::ostream& stream, const ECMAValue& value){
-	switch(value.type){
+	switch (typeof(v)){
+		case ECMAValueType::String:
 		case ECMAValueType::Number:
-			std::cout << value.getNumber();
-			break;
-		case ECMAValueType::Bool:
-			std::cout << value.getBool();
+		case ECMAValueType::Boolean:
+		case ECMAValueType::Symbol:
+			result = true;
 			break;
 		default:
-			std::cout << "<unknown>";
+			break;
 	}
 
-	return stream;
+	return result;
 }
 
 
+//could do some checkng here
+ECMAValue* GetBase(ECMAValue* v){
+	return ECMAReference::Cast(v)->base;
+}
+
+ECMAValue* GetReferencedName(ECMAValue* v){
+	return ECMAReference::Cast(v)->name;
+}
+
+bool IsStrictReference(ECMAValue* v){
+	return ECMAReference::Cast(v)->strict;
+}
+
+bool HasPrimitiveBase(ECMAValue* v){
+	return typeofIsPrimative(GetBase(v));
+}
+
+bool IsPropertyReference(ECMAValue* v){
+	return (HasPrimitiveBase(v) || typeof(GetBase(v)) == ECMAValueType::Object);
+}
+
+bool IsUnresolvableReference(ECMAValue* v){
+	return (typeof(GetBase(v)) == ECMAValueType::Undefined);
+}
+
+ECMAValue* GetValue(ECMAValue* v){
+	if (typeof(v) != ECMAValueType::Reference)
+		return v;
+
+	ECMAValue* base = GetBase(v);
+
+	//if unresolved 
+	if (IsUnresolvableReference(v)){
+
+	}
+
+	if (IsPropertyReference(v)){
+		if (HasPrimitiveBase(v)){
+		}
+	}
+
+	return nullptr;
+}

@@ -27,6 +27,8 @@ public:
 	void reload(const icu::UnicodeString*);
 	void save(void);
 	void restore(void);
+
+	std::size_t getPos(){return position;}
 };
 
 #endif

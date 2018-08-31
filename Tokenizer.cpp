@@ -8,8 +8,9 @@ static const char* _tokenTypes[] = {
 	"<UNKNOWN>", "<IDENTIFER>"
 };
 
-Tokenizer::Tokenizer(){
+Tokenizer::Tokenizer(/*JSFactory* f*/){
 	stream = new Stream();
+
 }
 
 Tokenizer::~Tokenizer(){
@@ -23,6 +24,7 @@ void Tokenizer::reset(void){
 		stream->reset();
 		grabCurrent();
 	}
+	//errors.clear();
 }
 
 std::list<std::shared_ptr<Token>>* Tokenizer::tokenize(const icu::UnicodeString* buffer){
@@ -51,16 +53,31 @@ std::list<std::shared_ptr<Token>>* Tokenizer::tokenize(const icu::UnicodeString*
 				reconsume = true;
 				currentState = TokenizerStates::IDENTIFER_PART;
 			}else if (isSpecialID()){
-				appendToken(rewriteSpecialID());
+				currentInput = rewriteSpecialID();
+
+				if (isIDStart()){
+					appendToken(currentInput);
+				}else{
+					//errors.push_back(&factory->createObject());
+					break;
+				}
 			}else{
 				emitToken(tokenList);
 				currentState = TokenizerStates::NORMAL;
 				reconsume = true;
 			}
-			
 		}else if (currentState == TokenizerStates::IDENTIFER_PART){
 			if (isIDContinue()){
 				appendToken(currentInput);
+			}else if (isSpecialID()){
+				currentInput = rewriteSpecialID();
+
+				if (isIDContinue()){
+					appendToken(currentInput);
+				}else{
+					//errors.push_back(&factory->createObject());
+					break;
+				}
 			}else{
 				emitToken(tokenList);
 				currentState = TokenizerStates::NORMAL;
@@ -91,24 +108,32 @@ void Tokenizer::grabCurrent(void){
 
 bool Tokenizer::isSpecialID(void){
 	stream->save();
+	UChar32 temp = currentInput;
 	bool output = false;
 	if (currentInput == 0x5C){
 		advance();
 		if (currentInput == 0x75)
 			output = true;
 	}
-
+	currentInput = temp;
 	stream->restore();
 
 	return output;
 }
 
 uint8_t Tokenizer::toHex(UChar32 v){
-	return 0; //temp
+	if (inRange(v, 0x30, 0x39)){
+		return v - 0x30;
+	}else if (inRange(v | 0x20, 0x61, 0x66)){
+		return 0x10 + (v - 0x61);
+	}
+
+	return 0;
 }
+
 UChar32 Tokenizer::rewriteSpecialID(void){
 	skipForward(2);
-	UChar32 output;
+	UChar32 output = 0;
 	if (currentInput == 0x7B){/*{*/
 		advance();
 		while (currentInput != 0x7B){
@@ -142,7 +167,7 @@ bool Tokenizer::isIDStart(void){
 }
 
 bool Tokenizer::isIDContinue(void){
-	if (currentInput == 0x24 || currentInput == 0x5C || currentInput == 0x200C || currentInput == 0x200D)
+	if (currentInput == 0x24 || currentInput == 0x200C || currentInput == 0x200D)
 		return true;
 	return u_hasBinaryProperty(currentInput, UCHAR_ID_CONTINUE);
 }
@@ -163,6 +188,7 @@ void Tokenizer::advance(void){
 
 void Tokenizer::skipForward(std::size_t s){
 	stream->next(s);
+	grabCurrent();
 }
 
 void Tokenizer::skipBackward(std::size_t s){
@@ -205,4 +231,12 @@ const char* _getTokenType(const Token& tok){
 			return _tokenTypes[0];
 			break;
 	}
+}
+
+inline void Token::setFlag(uint32_t f){
+	flag = flag | f;
+}
+
+inline void Token::clearFlag(uint32_t f){
+	flag = flag & (~f);
 }

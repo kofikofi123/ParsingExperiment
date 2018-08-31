@@ -21,8 +21,8 @@ GC::~GC(){
 	}
 }
 
-GCHandle& GC::registerECMAValue(ECMAValue* val){
-	GCHandle* handler = new GCHandle(val);
+GCHandle<ECMAValue>& GC::registerECMAValue(ECMAValue* val){
+	GCHandle<ECMAValue>* handler = new GCHandle(val);
 
 	roots.push_back(handler);
 	white.push_back(val);
@@ -30,8 +30,8 @@ GCHandle& GC::registerECMAValue(ECMAValue* val){
 	return *handler;
 }
 
-GCHandle& GC::registerHandle(GCHandle& other){
-	GCHandle* handler = new GCHandle(other);
+GCHandle<ECMAValue>& GC::registerHandle(GCHandle<ECMAValue>& other, bool weak){
+	GCHandle<ECMAValue>* handler = new GCHandle<ECMAValue>(other, weak);
 
 	roots.push_back(handler);
 
@@ -44,14 +44,14 @@ void GC::cleanupColors(){
 }
 
 static const char* getType(ECMAValue* v){
-	switch(v->getType()){
+	switch(v->Type()){
 		case ECMAValueType::Number:
 			return "<NUMBER>";
 			break;
 		case ECMAValueType::String:
 			return "<String>";
 			break;
-		case ECMAValueType::Bool:
+		case ECMAValueType::Boolean:
 			return "<Bool>";
 			break;
 		case ECMAValueType::Object:
@@ -68,7 +68,7 @@ static const char* getType(ECMAValue* v){
 
 static void printObjs(const std::list<ECMAValue*>& l){
 	for (auto i : l){
-		std::cout << getType(i) << "(" << *(i) << ") ";
+		std::cout << getType(i) << " ";
 	}
 	std::cout << std::endl;
 }
@@ -98,15 +98,15 @@ void GC::markGreyRoots(){
 	markGreyRoots(roots);
 }
 
-void GC::markGreyRoots(std::vector<GCHandle*>& pRoots){
+void GC::markGreyRoots(std::vector<GCHandle<ECMAValue>*>& pRoots){
 	ECMAValue* temp = nullptr;
 
-	for (GCHandle* i : pRoots){
+	for (GCHandle<ECMAValue>* i : pRoots){
 		temp = i->get();
 
 		auto p = std::find(white.begin(), white.end(), temp);
 
-		if (p != white.end()){
+		if (p != white.end() && !(i->weak)){
 			grey.push_back(temp);
 			white.erase(p);
 		}
@@ -116,14 +116,14 @@ void GC::markGreyRoots(std::vector<GCHandle*>& pRoots){
 void GC::scanGreyRoots(){
 	//ECMAValueType type;
 
-	/*Idk about symbols because I haven't worked with symbols, 
-	I have not used this feature at all, and have not looked at the spec for it yet*/
+	//Idk about symbols because I haven't worked with symbols, 
+	//I have not used this feature at all, and have not looked at the spec for it yet
 	ECMAValue* i = nullptr;
 
 	//Change loop from this to basic iterator based
 	for (auto it = grey.begin(); it != grey.end();){
 		i = *it;
-		if (i->getType() == ECMAValueType::Object){ //can do better
+		if (i->Type() == ECMAValueType::Object){ //can do better, maybe
 			markObjectRoots(i); 
 		}
 		black.push_back(i);
@@ -133,10 +133,10 @@ void GC::scanGreyRoots(){
 }
 
 void GC::markObjectRoots(ECMAValue* val){
-	std::vector<GCHandle*> v;
-	ECMAObject* obj = val->getObject();
+	std::vector<GCHandle<ECMAValue>*> v;
+	ECMAObject* obj = ECMAObject::Cast(val);
 
-	std::map<GCHandle*, GCHandle*>& tMap = obj->internalSlots;
+	std::map<GCHandle<ECMAValue>*, GCHandle<ECMAValue>*>& tMap = obj->internalSlots;
 
 	for (auto i = tMap.begin(); i != tMap.end(); i++){
 		v.push_back(i->first);
