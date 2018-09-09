@@ -58,6 +58,11 @@ T* GC::allocate(std::size_t n){
 	return obj;
 }
 
+template <class T>
+void GC::deallocate(T* ptr, std::size_t n){
+	allocator->deallocate<T>(ptr, sizeof(T) * n);
+}
+
 void GC::cleanupColors(){
 	grey.erase(grey.begin(), grey.end());
 	black.erase(black.begin(), black.end());

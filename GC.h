@@ -169,6 +169,9 @@ class GC {
 
 	template <class T>
 	T* allocate(std::size_t = 1);
+
+	template <class T>
+	void deallocate(T*, std::size_t);
 public:
 	GC(): GC(GC_DEFAULT_SIZE){}
 	GC(std::size_t);
