@@ -10,7 +10,7 @@ enum class JSType {SCRIPT = 0, MODULE = 1};
 
 class JSEngine {
 	Tokenizer* tokenizer;
-	//GC* pGC;
+	GC* pGC;
 
 	const char* readFile(const char*);
 public:

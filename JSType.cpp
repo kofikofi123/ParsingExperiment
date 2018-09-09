@@ -4,7 +4,126 @@
 
 //Will rewrite to fit with GC
 
+static void SetCompletion(ECMACompletionRecord* c, CompletionRecordType t, GCHandle<ECMAValue>* newVal){
+	c->type = t;
 
+	GCHandle<ECMAValue>* _c = c->value;
+
+	if (newVal == nullptr)
+		_c->empty();
+	else
+		_c->operator=(*newVal);
+
+}
+
+
+static void SetNormalCompletion(ECMACompletionRecord* c, GCHandle<ECMAValue>* newVal){
+	return SetCompletion(c, CompletionRecordType::Normal, newVal);
+
+}
+////////////////
+
+ECMACompletionRecord::ECMACompletionRecord(JSFactory* js){
+	value = js->createEmptyHandler();
+	target = js->createEmptyHandler();
+}
+
+
+ECMAValue* ECMACompletionRecord::Value() const {
+	return value->get();
+}
+
+
+auto ECMADeclEnv::contains(GCHandle<ECMAValue>* N){
+	auto start = bindings.begin();
+	auto end = bindings.end();
+
+	if (typeof(N->get()) != ECMAValueType::String) return end;
+
+	icu::UnicodeString* temp = ECMAString::Cast(N->get())->Value();
+	icu::UnicodeString* temp2 = nullptr;
+
+	for (auto i = start; i != end; i++){
+		temp2 = ECMAString::Cast((*i).first->get())->Value(); // :(
+
+		if (*temp == *temp2)
+			return i;
+	}
+
+	return end;
+}
+
+bool ECMADeclEnv::HasBinding(GCHandle<ECMAValue>* N){
+	if (contains(N) == bindings.end()) return false;
+
+	return true;
+}
+
+void ECMADeclEnv::CreateMutableBinding(GCHandle<ECMAValue>* N, bool D, ECMACompletionRecord* C){
+	if (HasBinding(N)){
+		return SetNormalCompletion(C, nullptr);
+	}
+
+	bindings[factory->createCloneHandle(N)] = new BindingInstance(factory->createEmptyHandler(), true, D, false);
+
+
+	return SetNormalCompletion(C, nullptr);
+}
+
+void ECMADeclEnv::CreateImmutableBinding(GCHandle<ECMAValue>* N, bool S, ECMACompletionRecord* C){
+	if (HasBinding(N)){
+		return SetNormalCompletion(C, nullptr);
+	}
+
+	bindings[factory->createCloneHandle(N)] = new BindingInstance(factory->createEmptyHandler(), false, true, S);
+
+
+	return SetNormalCompletion(C, nullptr);
+}
+
+void ECMADeclEnv::InitalizeBinding(GCHandle<ECMAValue>* N, GCHandle<ECMAValue>* V, ECMACompletionRecord* C){
+	auto it = contains(N);
+
+	if (it == bindings.end())
+		return SetNormalCompletion(C, nullptr);
+
+	BindingInstance* b = (*it).second;
+
+	if (b->isInit) 
+		return SetNormalCompletion(C, nullptr);
+
+	b->isInit = true;
+	b->value = factory->createCloneHandle(V);
+
+	return SetNormalCompletion(C, nullptr);
+}
+
+void ECMADeclEnv::GetBindingValue(GCHandle<ECMAValue>* N, bool S, ECMACompletionRecord* C){
+	auto it = contains(N);
+
+	if (it == bindings.end()) return SetNormalCompletion(C, nullptr);
+
+	BindingInstance* b = (*it).second;
+
+	if (!b->isInit) 
+		return SetCompletion(C, CompletionRecordType::Throw, factory->createNumber(32));///for now
+
+	return SetNormalCompletion(C, b->value);
+} 
+
+bool ECMADeclEnv::DeleteBinding(GCHandle<ECMAValue>* N){
+	auto it = contains(N);
+
+	if (it == bindings.end()) return false;
+
+	bindings.erase(it);
+
+	return true;
+}
+
+
+///////////
+///////////
 inline ECMAValueType typeof(ECMAValue* v){
 	return v->Type();
 }
@@ -30,11 +149,11 @@ bool typeofIsPrimative(ECMAValue* v){
 
 //could do some checkng here
 ECMAValue* GetBase(ECMAValue* v){
-	return ECMAReference::Cast(v)->base;
+	return ECMAReference::Cast(v)->base->get();
 }
 
 ECMAValue* GetReferencedName(ECMAValue* v){
-	return ECMAReference::Cast(v)->name;
+	return ECMAReference::Cast(v)->name->get();
 }
 
 bool IsStrictReference(ECMAValue* v){

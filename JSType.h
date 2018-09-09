@@ -7,16 +7,22 @@
 #include <unicode/unistr.h>
 #include "GC.h"
 
+
 //typename icu::UnicodeString* ECMAString;
 
 //decided to model the V8 structure
 
 //could be templated
 
+
+class GC;
+class JSFactory;
+
 template<class T>
 class GCHandle;
 
-enum class ECMAValueType {Number, Undefined, String, Boolean, Object, Value, Symbol, Reference, CompletionRecord};
+enum class ECMAValueType {Number, Undefined, String, Boolean, Object, Value, Symbol, Reference, CompletionRecord, EnviornmentRecord};
+enum class CompletionRecordType {Normal, Throw};
 
 class ECMAValue {
 public:
@@ -90,20 +96,24 @@ public:
 };
 
 class ECMACompletionRecord : public ECMAValue {
-
 public:
 
-	ECMACompletionRecord(){}
+	ECMACompletionRecord(JSFactory*);
 
-
-	ECMACompletionRecord* Value() const {return nullptr;}
+	ECMAValue* Value() const;
 	ECMAValueType Type() override {return ECMAValueType::CompletionRecord;}
+
+
+	CompletionRecordType type;
+	GCHandle<ECMAValue>* value;
+	GCHandle<ECMAValue>* target;
+
 };
 
 
 class ECMAReference : public ECMAValue {
-	ECMAValue* base;
-	ECMAValue* name;
+	GCHandle<ECMAValue>* base;
+	GCHandle<ECMAValue>* name;
 	bool strict;
 
 	friend ECMAValue* GetBase(ECMAValue*);
@@ -115,9 +125,9 @@ class ECMAReference : public ECMAValue {
 	friend bool IsSuperReference(ECMAValue*);
 	friend ECMAValue* GetValue(ECMAValue*);
 public:
-	ECMAReference(): ECMAReference(nullptr, nullptr, false){}
-	ECMAReference(ECMAValue* b, ECMAValue* r): ECMAReference(b, r, false){}
-	ECMAReference(ECMAValue* b, ECMAValue* r, bool s): base(b), name(r), strict(s){}
+	ECMAReference(): base(nullptr), name(nullptr), strict(false){}
+	ECMAReference(GCHandle<ECMAValue>* b, GCHandle<ECMAValue>* r): ECMAReference(b, r, false){}
+	ECMAReference(GCHandle<ECMAValue>* b, GCHandle<ECMAValue>* r, bool s): base(b), name(r), strict(s){}
 
 
 	ECMAReference* Value() const {return nullptr;}
@@ -126,6 +136,55 @@ public:
 	static ECMAReference* Cast(ECMAValue* v){
 		return dynamic_cast<ECMAReference*>(v);
 	}
+};
+
+class ECMAEnvRecord : public ECMAValue {
+protected:
+	JSFactory* factory;
+public:
+	ECMAEnvRecord(JSFactory* f): factory(f){}
+	virtual bool HasBinding(GCHandle<ECMAValue>*) = 0;
+	virtual void CreateMutableBinding(GCHandle<ECMAValue>*, bool, ECMACompletionRecord*) = 0;
+	virtual void CreateImmutableBinding(GCHandle<ECMAValue>*, bool, ECMACompletionRecord*) = 0;
+	virtual void InitalizeBinding(GCHandle<ECMAValue>*, GCHandle<ECMAValue>*, ECMACompletionRecord*) = 0;
+	virtual void GetBindingValue(GCHandle<ECMAValue>*, bool, ECMACompletionRecord*) = 0;
+	virtual bool DeleteBinding(GCHandle<ECMAValue>*) = 0;
+};
+
+
+////
+
+class ECMADeclEnv : public ECMAEnvRecord {
+	struct BindingInstance {
+		GCHandle<ECMAValue>* value;
+		bool canDelete;
+		bool isStrict;
+		bool isMutable;
+		bool isInit; //could be if (value->isAlive())
+
+		BindingInstance(GCHandle<ECMAValue>* v, bool m, bool c, bool i): value(v), canDelete(c), isStrict(i), isMutable(m), isInit(false){}
+	};
+
+	std::map<GCHandle<ECMAValue>*, BindingInstance*> bindings;
+
+	auto contains(GCHandle<ECMAValue>*);
+public:
+	ECMADeclEnv(JSFactory* f): ECMAEnvRecord(f){}
+	bool HasBinding(GCHandle<ECMAValue>*) override;
+	void CreateMutableBinding(GCHandle<ECMAValue>*, bool, ECMACompletionRecord*) override;
+	void CreateImmutableBinding(GCHandle<ECMAValue>*, bool, ECMACompletionRecord*) override;
+	void InitalizeBinding(GCHandle<ECMAValue>*, GCHandle<ECMAValue>*, ECMACompletionRecord*) override;
+	void GetBindingValue(GCHandle<ECMAValue>*, bool, ECMACompletionRecord*) override;
+	bool DeleteBinding(GCHandle<ECMAValue>*) override;
+};
+
+////
+
+class ECMALexicalEnviornment : public ECMAValue {
+
+public:
+	ECMALexicalEnviornment* outer;
+
 };
 
 ECMAValue* GetBase(ECMAValue*);

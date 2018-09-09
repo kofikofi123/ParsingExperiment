@@ -5,37 +5,57 @@
 /*Not done*/
 /*Tested what I have*/
 
-
 GC::GC(std::size_t s){
-	allocSize = s;
+	allocSize = s; //not in use yet
+
+	allocator = new GCAllocator(s);
 }
 
 GC::~GC(){
 	reset();
-	for (auto i : white){
-		delete i; //change this can't assume, or maybe it can through only allocation through factories
-	}
-
-	for (auto i : roots){
-		delete i;
-	}
+	delete allocator;
 }
 
-GCHandle<ECMAValue>& GC::registerECMAValue(ECMAValue* val){
-	GCHandle<ECMAValue>* handler = new GCHandle(val);
+template <class T, class ... Args>
+GCHandle<ECMAValue>* GC::registerECMAValue(Args... args){
+	ECMAValue* val = allocate<T>(1);
+	GCHandle<ECMAValue>* handler = allocate<GCHandle<ECMAValue>>(1);
 
-	roots.push_back(handler);
-	white.push_back(val);
+	allocator->construct<T>(val, std::forward<Args>(args)...);
 
-	return *handler;
-}
-
-GCHandle<ECMAValue>& GC::registerHandle(GCHandle<ECMAValue>& other, bool weak){
-	GCHandle<ECMAValue>* handler = new GCHandle<ECMAValue>(other, weak);
+	allocator->construct<GCHandle<ECMAValue>>(handler, val);
 
 	roots.push_back(handler);
 
-	return *handler;
+	if (val != nullptr && std::find(white.begin(), white.end(), val) == white.end())
+		white.push_back(val);
+
+	return handler;
+}
+
+GCHandle<ECMAValue>* GC::registerHandle(GCHandle<ECMAValue>* other, bool weak){
+	GCHandle<ECMAValue>* handler = allocate<GCHandle<ECMAValue>>(1);
+
+	allocator->construct<GCHandle<ECMAValue>>(handler, other, weak);
+
+	roots.push_back(handler);
+
+	return handler;
+}
+
+template <class T>
+T* GC::allocate(std::size_t n){
+	T* obj = allocator->allocate<T>(sizeof(T) * n);
+
+	if (obj == nullptr){
+		emergencySweep(); //save for later
+		obj = allocator->allocate<T>(n);
+
+		if (obj == nullptr)
+			throw std::bad_alloc();
+	}
+
+	return obj;
 }
 
 void GC::cleanupColors(){
@@ -59,6 +79,9 @@ static const char* getType(ECMAValue* v){
 			break;
 		case ECMAValueType::Symbol:
 			return "<Symbol>";
+			break;
+		case ECMAValueType::Reference:
+			return "<Internal_Reference>";
 			break;
 		default:
 			return "<?Unknown?>";
@@ -113,6 +136,8 @@ void GC::markGreyRoots(std::vector<GCHandle<ECMAValue>*>& pRoots){
 	}
 }
 
+
+
 void GC::scanGreyRoots(){
 	//ECMAValueType type;
 
@@ -157,10 +182,183 @@ void GC::reset(){
 
 void GC::sweep(){
 	for (auto i = white.begin(); i != white.end(); i++){
-		delete *i;
+		ECMAValue* val = *i;
+
+		allocator->deconstruct(val);
+		allocator->deallocate(val, 1);
 	}
 
 	white.erase(white.begin(), white.end());
 
 	white.swap(black);
+}
+
+GCHandle<ECMAValue>* JSFactory::createNumber(double num){
+	return create<ECMANumber>(num);
+}
+
+GCHandle<ECMAValue>* JSFactory::createString(){
+	return createStringFromAscii(nullptr);
+}
+
+GCHandle<ECMAValue>* JSFactory::createStringFromAscii(const char* ascii){
+	return create<ECMAString>(ascii);
+}
+
+GCHandle<ECMAValue>* JSFactory::createCloneHandle(GCHandle<ECMAValue>* handle, bool isWeak){
+	return gc->registerHandle(handle, isWeak);
+}
+
+GCHandle<ECMAValue>* JSFactory::createEmptyHandler(){
+	return gc->registerHandle(nullptr);
+}
+
+template <class T, class ... Args>
+GCHandle<ECMAValue>* JSFactory::create(Args... args){
+	return gc->registerECMAValue<T>(std::forward<Args>(args)...);
+}
+
+template <class T>
+T* GCAllocator::allocate(uint32_t n){
+	Node* loc = findSpace(n);
+
+	uint32_t max_size = 4 + n;
+
+	if (loc == nullptr) {
+		return nullptr;
+	}
+
+	Node* l_end = reinterpret_cast<Node*>(reinterpret_cast<char*>(loc) + (max_size));
+	Node* next = loc->next;
+	Node* past = prev(loc);
+
+	if (next == nullptr){
+		char* cEnd = (char*)l_end;
+
+		if (cEnd >= end)
+			past->next = nullptr;
+		else {
+			l_end->spaceSize = (end - cEnd);
+			l_end->next = nullptr;
+
+			past->next = l_end;
+		}
+	}
+
+	uint32_t* sPtr = (uint32_t*)loc;
+	*sPtr = max_size;
+
+	sPtr++;
+
+	return reinterpret_cast<T*>(sPtr);
+}
+
+template <class T, class ... Args>
+void GCAllocator::construct(void* ptr, Args... args){
+	new (ptr) T (std::forward<Args>(args)...);
+}
+
+GCAllocator::Node* GCAllocator::findSpace(uint32_t size){
+	Node* h = head.next;
+
+	size = size + 4;
+	while (h != nullptr){
+		if (h->spaceSize >= size)
+			return h;
+		h = h->next;
+	}
+
+	return nullptr;
+}
+
+void GCAllocator::unlink(Node* node){
+	Node* pHead = &head;
+
+	while (pHead->next != nullptr){
+		if (pHead == node){
+			pHead->next = node->next;
+			return;
+		}
+		pHead = pHead->next;
+	}
+}
+
+typename GCAllocator::Node* GCAllocator::prev(Node* node){
+	Node* pHead = &head;
+
+	while (pHead->next != nullptr){
+		if (pHead->next == node)
+			return pHead;
+		pHead = pHead->next;
+	}
+
+	return nullptr;
+}
+
+template <class T>
+void GCAllocator::deallocate(T* ptr, uint32_t siz){
+	if (ptr == nullptr) return;
+	char* tempA = (char*)ptr;
+
+	if (space > tempA || tempA > end){
+		std::cout << "what?" << std::endl;
+		return;
+	}
+
+	uint32_t* tempB = (uint32_t*)ptr;
+	uint32_t rSize = 0;
+
+	tempB--;
+
+	rSize = *tempB;
+
+	Node* n = (Node*)(tempB);
+
+	n->spaceSize = rSize;
+
+	Node* p = findNearestNode(n);
+
+	n->next = p->next;
+	p->next = n;
+
+	cleanSweep();
+
+}
+
+
+GCAllocator::Node* GCAllocator::findNearestNode(Node* node){
+	Node* prev = &head;
+	Node* current = prev->next;
+
+	while (current != nullptr) {
+		if (current > node)
+			return prev;
+
+		prev = current;
+		current = current->next;
+	}
+
+	return nullptr;
+}
+
+void GCAllocator::cleanSweep(){
+	Node* current = head.next;
+	Node* next = current->next;
+	Node* l_end = nullptr;
+	while (next != nullptr) {
+		l_end = (Node*)((char*)current + current->spaceSize - 1);
+
+		if (l_end >= next){
+			current->next = next->next;
+		}
+
+		current = next;
+		next = current->next;
+	}	
+}
+
+
+template <class T>
+void GCAllocator::deconstruct(T* ptr){
+	ptr->~T();
 }

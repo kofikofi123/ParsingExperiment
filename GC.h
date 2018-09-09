@@ -4,6 +4,8 @@
 
 #include <vector>
 #include <list>
+#include <memory>
+#include <cstdint>
 #include "JSType.h"
 
 
@@ -13,6 +15,8 @@
 class ECMAValue;
 class ECMAString;
 class ECMANumber;
+
+//TODO: make GC allocate emcavalue's itself
 
 /*
 typedef icu::UnicodeString ECMAString;
@@ -30,6 +34,60 @@ class ECMAObject;
 	Will probably need to add padding
 */
 //class GC;
+class GCAllocator {
+	std::size_t max;
+	char* space;
+	char* end;
+
+	struct Node {
+		uint32_t spaceSize;
+		Node* next;
+	};
+
+	Node head;
+
+	Node* findSpace(uint32_t);
+	Node* prev(Node*);
+	Node* findNearestNode(Node*);
+
+	void cleanSweep();
+	void unlink(Node*);
+public:
+	GCAllocator(std::size_t m): max(m){
+		space = static_cast<char*>(std::malloc(m));
+		if (space == nullptr) return;
+
+		end = space + (m - 1);
+
+		head.spaceSize = max;
+
+
+		Node* node = reinterpret_cast<Node*>(space);
+		node->spaceSize = max;
+		node->next = nullptr;
+
+		head.next = node;
+	}
+
+	~GCAllocator(){
+		std::free(space);
+	}
+
+
+	template <class T>
+	T* allocate(uint32_t);
+
+	template <class T, class ... Args>
+	void construct(void*, Args...);
+
+	template <class T>
+	void deconstruct(T*);
+
+
+	template <class T>
+	void deallocate(T*, uint32_t);
+};
+
 
 template<class T>
 class GCHandle {
@@ -44,11 +102,17 @@ public:
 	GCHandle(T* v): GCHandle(v, false){}
 	GCHandle(T* v, bool w): value(v), weak(w){}
 
-	GCHandle(GCHandle<T>& other): GCHandle(other.value, false){}
-	GCHandle(GCHandle<T>& other, bool w): GCHandle(other.value, w){}
+	GCHandle(const GCHandle<T>* other): GCHandle(other->value, false){}
+	GCHandle(const GCHandle<T>* other, bool w): GCHandle(other->value, w){}
 
 	GCHandle& operator=(const GCHandle& other){
 		value = other.value;
+
+		return *this;
+	}
+
+	GCHandle& operator=(T* other){
+		value = other;
 
 		return *this;
 	}
@@ -72,13 +136,19 @@ public:
 	bool isAlive(){
 		return value != nullptr;
 	}
+
+	void empty(){
+		value = nullptr;
+	}
 };
+
 
 class GC {
 	template <class T>
 	friend class GCHandle;
 	std::size_t allocSize;
 
+	GCAllocator* allocator;
 
 	std::vector<GCHandle<ECMAValue>*> roots;
 	//std::vector<ECMAValue*> objects;
@@ -90,15 +160,24 @@ class GC {
 	void markGreyRoots();
 	void markGreyRoots(std::vector<GCHandle<ECMAValue>*>&);
 	void markObjectRoots(ECMAValue*);
+	void killHandle(GCHandle<ECMAValue>*);
 	void scanGreyRoots();
+	inline void emergencySweep(){ //save for later
+		markFull();
+		sweep();
+	}
+
+	template <class T>
+	T* allocate(std::size_t = 1);
 public:
 	GC(): GC(GC_DEFAULT_SIZE){}
 	GC(std::size_t);
 	~GC();
 
-	GCHandle<ECMAValue>& registerECMAValue(ECMAValue*);
+	template <class T, class ... Args>
+	GCHandle<ECMAValue>* registerECMAValue(Args...);
 
-	GCHandle<ECMAValue>& registerHandle(GCHandle<ECMAValue>&, bool = false);
+	GCHandle<ECMAValue>* registerHandle(GCHandle<ECMAValue>*, bool = false);
 	void cleanupColors();
 
 
@@ -112,13 +191,20 @@ public:
 class JSFactory {
 	GC* gc;
 public:
-	JSFactory(GC* g){gc=g;}
+	JSFactory(GC* g): gc(g){}
 
-	GCHandle<ECMANumber>* createNumber(double);
+	GCHandle<ECMAValue>* createNumber(double);
 
-	GCHandle<ECMAString>* createString();
+	GCHandle<ECMAValue>* createString();
 
-	GCHandle<ECMAString>* createStringFromAscii(const char*);
+	GCHandle<ECMAValue>* createStringFromAscii(const char*);
+
+	GCHandle<ECMAValue>* createCloneHandle(GCHandle<ECMAValue>*, bool = false);
+
+	GCHandle<ECMAValue>* createEmptyHandler();
+
+	template <class T, class ... Args>
+	GCHandle<ECMAValue>* create(Args...);
 
 
 	//GCHandle<ECMAObject>* createObject(ECMAObject* = nullptr, std::list<const char*> = {});

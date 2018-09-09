@@ -14,22 +14,22 @@ int main(int argc, char* argv[]){
 
 	{
 		GC myGC;
+		JSFactory factory(&myGC);
 
 
-		GCHandle<ECMAValue>& v0 = myGC.registerECMAValue(new ECMANumber(32.0));
-		GCHandle<ECMAValue>& v1 = myGC.registerECMAValue(new ECMAString("hello wrodl"));
+		GCHandle<ECMAValue>* val = factory.createNumber(90);
+
+		if (val->isAlive()){
+
+			ECMANumber* num = ECMANumber::Cast(val->get());
+
+			std::cout << num->Value()  << std::endl;
+		}else{
+			std::cout << "why though" << std::endl;
+		}
 
 		myGC.markFull();
 		myGC.debug();
-		myGC.sweep();
-
-		std::cout << "-----------------------" << std::endl;
-
-		v1 = v0;
-
-		myGC.markFull();
-		myGC.debug();
-
 	}
 	//engine.doFile(argv[1]);
 	return 0;
