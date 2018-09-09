@@ -78,7 +78,7 @@ public:
 	T* allocate(uint32_t);
 
 	template <class T, class ... Args>
-	void construct(void*, Args...);
+	void construct(void*, Args&&...);
 
 	template <class T>
 	void deconstruct(T*);
@@ -178,7 +178,7 @@ public:
 	~GC();
 
 	template <class T, class ... Args>
-	GCHandle<ECMAValue>* registerECMAValue(Args...);
+	GCHandle<ECMAValue>* registerECMAValue(Args&&...);
 
 	GCHandle<ECMAValue>* registerHandle(GCHandle<ECMAValue>*, bool = false);
 	void cleanupColors();
@@ -207,7 +207,7 @@ public:
 	GCHandle<ECMAValue>* createEmptyHandler();
 
 	template <class T, class ... Args>
-	GCHandle<ECMAValue>* create(Args...);
+	GCHandle<ECMAValue>* create(Args&&...);
 
 
 	//GCHandle<ECMAObject>* createObject(ECMAObject* = nullptr, std::list<const char*> = {});

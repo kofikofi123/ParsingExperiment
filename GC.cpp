@@ -17,7 +17,7 @@ GC::~GC(){
 }
 
 template <class T, class ... Args>
-GCHandle<ECMAValue>* GC::registerECMAValue(Args... args){
+GCHandle<ECMAValue>* GC::registerECMAValue(Args&&... args){
 	ECMAValue* val = allocate<T>(1);
 	GCHandle<ECMAValue>* handler = allocate<GCHandle<ECMAValue>>(1);
 
@@ -219,7 +219,7 @@ GCHandle<ECMAValue>* JSFactory::createEmptyHandler(){
 }
 
 template <class T, class ... Args>
-GCHandle<ECMAValue>* JSFactory::create(Args... args){
+GCHandle<ECMAValue>* JSFactory::create(Args&&... args){
 	return gc->registerECMAValue<T>(std::forward<Args>(args)...);
 }
 
@@ -259,7 +259,7 @@ T* GCAllocator::allocate(uint32_t n){
 }
 
 template <class T, class ... Args>
-void GCAllocator::construct(void* ptr, Args... args){
+void GCAllocator::construct(void* ptr, Args&&... args){
 	new (ptr) T (std::forward<Args>(args)...);
 }
 
