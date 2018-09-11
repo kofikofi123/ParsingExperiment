@@ -13,7 +13,15 @@ GC::GC(std::size_t s){
 
 GC::~GC(){
 	reset();
-	delete allocator;
+	for (auto i = white.begin(); i != white.end(); i++) {
+
+		allocator->deconstruct(*i);
+	}
+
+
+	for (auto i = roots.begin(); i != roots.end(); i++){
+		allocator->deconstruct(*i);
+	}
 }
 
 template <class T, class ... Args>
@@ -23,7 +31,7 @@ GCHandle<ECMAValue>* GC::registerECMAValue(Args&&... args){
 
 	allocator->construct<T>(val, std::forward<Args>(args)...);
 
-	allocator->construct<GCHandle<ECMAValue>>(handler, val);
+	allocator->construct<GCHandle<ECMAValue>>(handler, this, val);
 
 	roots.push_back(handler);
 
@@ -36,7 +44,7 @@ GCHandle<ECMAValue>* GC::registerECMAValue(Args&&... args){
 GCHandle<ECMAValue>* GC::registerHandle(GCHandle<ECMAValue>* other, bool weak){
 	GCHandle<ECMAValue>* handler = allocate<GCHandle<ECMAValue>>(1);
 
-	allocator->construct<GCHandle<ECMAValue>>(handler, other, weak);
+	allocator->construct<GCHandle<ECMAValue>>(handler, this, other, weak);
 
 	roots.push_back(handler);
 
@@ -166,11 +174,17 @@ void GC::markObjectRoots(ECMAValue* val){
 	std::vector<GCHandle<ECMAValue>*> v;
 	ECMAObject* obj = ECMAObject::Cast(val);
 
-	std::map<GCHandle<ECMAValue>*, GCHandle<ECMAValue>*>& tMap = obj->internalSlots;
+	/*
+	std::map<GCHandle<ECMAValue>*, GCHandle<ECMAValue>*> map;
 
 	for (auto i = tMap.begin(); i != tMap.end(); i++){
 		v.push_back(i->first);
 		v.push_back(i->second);
+	}*/
+
+	for (auto i : obj->internalRange){
+		v.push_back(i.first);
+		v.push_back(i.second);
 	}
 
 	markGreyRoots(v);
@@ -366,4 +380,9 @@ void GCAllocator::cleanSweep(){
 template <class T>
 void GCAllocator::deconstruct(T* ptr){
 	ptr->~T();
+}
+
+template <class T>
+GCHandle<T>* GCHandle<T>::clone(){
+	return gc->registerHandle(this);
 }

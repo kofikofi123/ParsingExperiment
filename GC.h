@@ -16,6 +16,8 @@ class ECMAValue;
 class ECMAString;
 class ECMANumber;
 
+class GC;
+
 //TODO: make GC allocate emcavalue's itself
 
 /*
@@ -92,18 +94,18 @@ public:
 template<class T>
 class GCHandle {
 	friend class GC;
+	GC* gc;
 	T* value;
 	bool weak;
-	//GC* gc;
 	//bool marked;
 public:
 
-	GCHandle(): GCHandle(nullptr, false){}
-	GCHandle(T* v): GCHandle(v, false){}
-	GCHandle(T* v, bool w): value(v), weak(w){}
+	GCHandle(GC* g): GCHandle(g, nullptr, false){}
+	GCHandle(GC* g, T* v): GCHandle(g, v, false){}
+	GCHandle(GC* g, T* v, bool w): gc(g), value(v), weak(w){}
 
-	GCHandle(const GCHandle<T>* other): GCHandle(other->value, false){}
-	GCHandle(const GCHandle<T>* other, bool w): GCHandle(other->value, w){}
+	GCHandle(GC* g, const GCHandle<T>* other): GCHandle(g, other->value, false){}
+	GCHandle(GC* g, const GCHandle<T>* other, bool w): GCHandle(g, other->value, w){}
 
 	GCHandle& operator=(const GCHandle& other){
 		value = other.value;
@@ -116,6 +118,8 @@ public:
 
 		return *this;
 	}
+
+	GCHandle<T>* clone();
 
 	T& operator*(){
 		return *value;

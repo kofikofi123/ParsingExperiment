@@ -24,10 +24,46 @@ class GCHandle;
 enum class ECMAValueType {Number, Undefined, String, Boolean, Object, Value, Symbol, Reference, CompletionRecord, EnviornmentRecord};
 enum class CompletionRecordType {Normal, Throw};
 
+template <class Container>
+struct rangeInterface {
+	auto begin(){return container->begin();}
+	auto cbegin(){return container->cbegin();}
+
+	auto end(){return container->end();}
+	auto cend(){return container->cend();}
+
+	rangeInterface(Container& c): container(&c){}
+private:
+	Container* container;
+};
+
+namespace std {
+	template <class Container>
+	auto begin(rangeInterface<Container>* v){
+		return v->begin();
+	}
+
+	template <class Container>
+	auto cbegin(const rangeInterface<Container>* v){
+		return v->cbegin();
+	}
+
+	template <class Container>
+	auto end(rangeInterface<Container>* v){
+		return v->end();
+	}
+
+	template <class Container>
+	auto cend(const rangeInterface<Container>* v){
+		return v->cend();
+	}
+};	
+
 class ECMAValue {
 public:
 	virtual ~ECMAValue(){}
 	virtual ECMAValueType Type(){return ECMAValueType::Value;}
+	virtual void* Value(){return nullptr;}
 };
 
 class ECMANumber : public ECMAValue {
@@ -81,14 +117,22 @@ public:
 };
 
 class ECMAObject : public ECMAValue {
-
+	std::map<GCHandle<ECMAValue>*, GCHandle<ECMAValue>*> internalSlots;
 public:
-	ECMAObject(){}
+	ECMAObject(){
+		internalRange = new rangeInterface<std::map<GCHandle<ECMAValue>*, GCHandle<ECMAValue>*>>(internalSlots);
+
+	}
+
 
 	ECMAObject* Value() const {return nullptr;}
 	ECMAValueType Type() override {return ECMAValueType::Object;}
 
-	std::map<GCHandle<ECMAValue>*, GCHandle<ECMAValue>*> internalSlots;
+	rangeInterface<std::map<GCHandle<ECMAValue>*, GCHandle<ECMAValue>*>>* internalRange;
+	rangeInterface<std::map<GCHandle<ECMAValue>*, GCHandle<ECMAValue>*>>* propertyRange;
+
+	void setInternalSlot(GCHandle<ECMAValue>*, GCHandle<ECMAValue>*);
+	GCHandle<ECMAValue>* getInternalSlot(GCHandle<ECMAValue>*);
 
 	static ECMAObject* Cast(ECMAValue* v){
 		return dynamic_cast<ECMAObject*>(v);
