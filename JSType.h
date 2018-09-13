@@ -119,9 +119,8 @@ public:
 class ECMAObject : public ECMAValue {
 	std::map<GCHandle<ECMAValue>*, GCHandle<ECMAValue>*> internalSlots;
 public:
-	ECMAObject(){
-		internalRange = new rangeInterface<std::map<GCHandle<ECMAValue>*, GCHandle<ECMAValue>*>>(internalSlots);
-	}
+	ECMAObject(): internalRange(new rangeInterface<std::map<GCHandle<ECMAValue>*, GCHandle<ECMAValue>*>>(internalSlots)),
+                propertyRange(nullptr)/*for now*/{}
   
   ~ECMAObject(){
     delete internalRange;
@@ -131,8 +130,8 @@ public:
 	ECMAObject* Value() const {return nullptr;}
 	ECMAValueType Type() override {return ECMAValueType::Object;}
 
-	rangeInterface<std::map<GCHandle<ECMAValue>*, GCHandle<ECMAValue>*>>* internalRange;
-	rangeInterface<std::map<GCHandle<ECMAValue>*, GCHandle<ECMAValue>*>>* propertyRange;
+	rangeInterface<std::map<GCHandle<ECMAValue>*, GCHandle<ECMAValue>*>>* const internalRange;
+	rangeInterface<std::map<GCHandle<ECMAValue>*, GCHandle<ECMAValue>*>>* const propertyRange;
 
 	void setInternalSlot(GCHandle<ECMAValue>*, GCHandle<ECMAValue>*);
 	GCHandle<ECMAValue>* getInternalSlot(GCHandle<ECMAValue>*);
