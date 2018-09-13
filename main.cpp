@@ -13,30 +13,26 @@ int main(int argc, char* argv[]){
 	JSEngine engine;
 
 	{
-		GC myGC;
+		GC myGC(500);
 		JSFactory factory(&myGC);
 
 
-		GCHandle<ECMAValue>* val = factory.createNumber(90);
-    GCHandle<ECMAValue>* val2 = val->clone();
-
-
-		myGC.markFull();
-		myGC.debug();
+		GCHandle<ECMAValue>* key = factory.createStringFromAscii("This_is_key");
+    GCHandle<ECMAValue>* val = factory.createNumber(90.0);
+    GCHandle<ECMAValue>* obj = factory.createObject();
     
-    std::cout << "--------\n--------" << std::endl;
+    ECMAObject* rObj = ECMAObject::Cast(obj->get());
     
-    val->empty();
+    rObj->setInternalSlot(key, val);
     
-    myGC.markFull();
-    myGC.debug();
-    
-    std::cout << "--------\n--------" << std::endl;
-    
-    val2->empty();
+    for (auto i : rObj->internalRange){
+      std::cout << "[\nKey type: " << i.first->get()->Type() << std::endl;
+      std::cout << "Value type: " << i.second->get()->Type() << "\n]" << std::endl;
+    }
     
     myGC.markFull();
     myGC.debug();
+
     
 	}
 	//engine.doFile(argv[1]);

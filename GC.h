@@ -118,7 +118,7 @@ public:
 		return *this;
 	}
   
-	GCHandle<T>* clone();
+	GCHandle<T>* clone(bool = false);
 
 	T& operator*(){
 		return *value;
@@ -206,6 +206,8 @@ public:
 	GCHandle<ECMAValue>* createStringFromAscii(const char*);
 
 	GCHandle<ECMAValue>* createCloneHandle(GCHandle<ECMAValue>*, bool = false);
+  
+  GCHandle<ECMAValue>* createObject();
 
 	GCHandle<ECMAValue>* createEmptyHandler();
 

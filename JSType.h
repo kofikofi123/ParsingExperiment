@@ -121,7 +121,6 @@ class ECMAObject : public ECMAValue {
 public:
 	ECMAObject(){
 		internalRange = new rangeInterface<std::map<GCHandle<ECMAValue>*, GCHandle<ECMAValue>*>>(internalSlots);
-
 	}
   
   ~ECMAObject(){
@@ -246,6 +245,8 @@ ECMAValue* GetValue(ECMAValue*);
 
 ECMAValueType typeof(ECMAValue*);
 bool typeofIsPrimative(ECMAValue*);
+
+std::ostream& operator<<(std::ostream& stream, ECMAValueType val);
 
 
 #endif

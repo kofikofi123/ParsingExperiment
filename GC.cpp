@@ -23,6 +23,8 @@ GC::~GC(){
 	for (auto i = roots.begin(); i != roots.end(); i++){
 		allocator->deconstruct(*i);
 	}
+  
+  delete allocator;
 }
 
 template <class T, class ... Args>
@@ -47,9 +49,7 @@ GCHandle<ECMAValue>* GC::registerHandle(GCHandle<ECMAValue>* other, bool weak){
   
 	allocator->construct<GCHandle<ECMAValue>>(handler, this, other, weak);
   
-  std::cout << roots.size() << std::endl;
 	roots.push_back(handler);
-  std::cout << roots.size() << std::endl;
 
 	return handler;
 }
@@ -62,8 +62,9 @@ T* GC::allocate(std::size_t n){
 		emergencySweep(); //save for later
 		obj = allocator->allocate<T>(n);
 
-		if (obj == nullptr)
+		if (obj == nullptr){
 			throw std::bad_alloc();
+    }
 	}
 
 	return obj;
@@ -79,35 +80,11 @@ void GC::cleanupColors(){
 	black.erase(black.begin(), black.end());
 }
 
-static const char* getType(ECMAValue* v){
-	switch(v->Type()){
-		case ECMAValueType::Number:
-			return "<NUMBER>";
-			break;
-		case ECMAValueType::String:
-			return "<String>";
-			break;
-		case ECMAValueType::Boolean:
-			return "<Bool>";
-			break;
-		case ECMAValueType::Object:
-			return "<Object>";
-			break;
-		case ECMAValueType::Symbol:
-			return "<Symbol>";
-			break;
-		case ECMAValueType::Reference:
-			return "<Internal_Reference>";
-			break;
-		default:
-			return "<?Unknown?>";
-			break;
-	}
-}
+
 
 static void printObjs(const std::list<ECMAValue*>& l){
 	for (auto i : l){
-		std::cout << getType(i) << " ";
+		std::cout << i->Type() << " ";
 	}
 	std::cout << std::endl;
 }
@@ -227,6 +204,10 @@ GCHandle<ECMAValue>* JSFactory::createStringFromAscii(const char* ascii){
 	return create<ECMAString>(ascii);
 }
 
+GCHandle<ECMAValue>* JSFactory::createObject(){
+  return create<ECMAObject>();
+}
+
 GCHandle<ECMAValue>* JSFactory::createCloneHandle(GCHandle<ECMAValue>* handle, bool isWeak){
 	return gc->registerHandle(handle, isWeak);
 }
@@ -323,7 +304,6 @@ void GCAllocator::deallocate(T* ptr, uint32_t siz){
 	char* tempA = (char*)ptr;
 
 	if (space > tempA || tempA > end){
-		std::cout << "what?" << std::endl;
 		return;
 	}
 
@@ -386,9 +366,9 @@ void GCAllocator::deconstruct(T* ptr){
 }
 
 template <class T>
-GCHandle<T>* GCHandle<T>::clone(){
-  return gc->registerHandle(this);
+GCHandle<T>* GCHandle<T>::clone(bool weak){
+  return gc->registerHandle(this, weak);
 }
 
 
-template GCHandle<ECMAValue>* GCHandle<ECMAValue>::clone();
+template GCHandle<ECMAValue>* GCHandle<ECMAValue>::clone(bool);

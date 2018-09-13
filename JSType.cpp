@@ -2,6 +2,36 @@
 #include <unicode/ustream.h>
 #include "JSType.h"
 
+static const char* getType(ECMAValueType type){
+	switch(type){
+		case ECMAValueType::Number:
+			return "<NUMBER>";
+			break;
+		case ECMAValueType::String:
+			return "<String>";
+			break;
+		case ECMAValueType::Boolean:
+			return "<Bool>";
+			break;
+		case ECMAValueType::Object:
+			return "<Object>";
+			break;
+		case ECMAValueType::Symbol:
+			return "<Symbol>";
+			break;
+		case ECMAValueType::Reference:
+			return "<Internal_Reference>";
+			break;
+		default:
+			return "<?Unknown?>";
+			break;
+	}
+}
+
+std::ostream& operator<<(std::ostream& stream, ECMAValueType val){
+  stream << getType(val);
+  return stream;
+}
 //Will rewrite to fit with GC
 
 static void SetCompletion(ECMACompletionRecord* c, CompletionRecordType t, GCHandle<ECMAValue>* newVal){
@@ -190,6 +220,7 @@ ECMAValue* GetValue(ECMAValue* v){
 
 	return nullptr;
 }
+
 
 //////////////
 void ECMAObject::setInternalSlot(GCHandle<ECMAValue>* key, GCHandle<ECMAValue>* value){
