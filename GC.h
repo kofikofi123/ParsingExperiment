@@ -99,14 +99,13 @@ class GCHandle {
 	bool weak;
 	//bool marked;
 public:
-
 	GCHandle(GC* g): GCHandle(g, nullptr, false){}
 	GCHandle(GC* g, T* v): GCHandle(g, v, false){}
 	GCHandle(GC* g, T* v, bool w): gc(g), value(v), weak(w){}
 
 	GCHandle(GC* g, const GCHandle<T>* other): GCHandle(g, other->value, false){}
 	GCHandle(GC* g, const GCHandle<T>* other, bool w): GCHandle(g, other->value, w){}
-
+  
 	GCHandle& operator=(const GCHandle& other){
 		value = other.value;
 
@@ -118,7 +117,7 @@ public:
 
 		return *this;
 	}
-
+  
 	GCHandle<T>* clone();
 
 	T& operator*(){

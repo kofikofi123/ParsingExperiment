@@ -193,14 +193,17 @@ ECMAValue* GetValue(ECMAValue* v){
 
 //////////////
 void ECMAObject::setInternalSlot(GCHandle<ECMAValue>* key, GCHandle<ECMAValue>* value){
-	internalSlots[key] = value->clone();
+  internalSlots[key->clone()] = value->clone();
 }
 
 GCHandle<ECMAValue>* ECMAObject::getInternalSlot(GCHandle<ECMAValue>* key){
 	for (auto i : internalSlots){
-		GCHandle<ECMAValue>* ok = i.first;
+		GCHandle<ECMAValue>* handle = i.first;
+    ECMAValue* val = handle->get();
 
-		if (ok->Value() == key->Value())
+		if (val->Value() == val->Value())
 			return i.second;
 	}
+  
+  return nullptr;
 }

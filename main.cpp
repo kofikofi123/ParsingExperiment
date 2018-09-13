@@ -18,18 +18,26 @@ int main(int argc, char* argv[]){
 
 
 		GCHandle<ECMAValue>* val = factory.createNumber(90);
+    GCHandle<ECMAValue>* val2 = val->clone();
 
-		if (val->isAlive()){
-
-			ECMANumber* num = ECMANumber::Cast(val->get());
-
-			std::cout << num->Value()  << std::endl;
-		}else{
-			std::cout << "why though" << std::endl;
-		}
 
 		myGC.markFull();
 		myGC.debug();
+    
+    std::cout << "--------\n--------" << std::endl;
+    
+    val->empty();
+    
+    myGC.markFull();
+    myGC.debug();
+    
+    std::cout << "--------\n--------" << std::endl;
+    
+    val2->empty();
+    
+    myGC.markFull();
+    myGC.debug();
+    
 	}
 	//engine.doFile(argv[1]);
 	return 0;

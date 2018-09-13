@@ -123,6 +123,10 @@ public:
 		internalRange = new rangeInterface<std::map<GCHandle<ECMAValue>*, GCHandle<ECMAValue>*>>(internalSlots);
 
 	}
+  
+  ~ECMAObject(){
+    delete internalRange;
+  }
 
 
 	ECMAObject* Value() const {return nullptr;}

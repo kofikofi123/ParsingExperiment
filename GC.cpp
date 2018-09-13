@@ -5,6 +5,7 @@
 /*Not done*/
 /*Tested what I have*/
 
+
 GC::GC(std::size_t s){
 	allocSize = s; //not in use yet
 
@@ -43,10 +44,12 @@ GCHandle<ECMAValue>* GC::registerECMAValue(Args&&... args){
 
 GCHandle<ECMAValue>* GC::registerHandle(GCHandle<ECMAValue>* other, bool weak){
 	GCHandle<ECMAValue>* handler = allocate<GCHandle<ECMAValue>>(1);
-
+  
 	allocator->construct<GCHandle<ECMAValue>>(handler, this, other, weak);
-
+  
+  std::cout << roots.size() << std::endl;
 	roots.push_back(handler);
+  std::cout << roots.size() << std::endl;
 
 	return handler;
 }
@@ -120,7 +123,7 @@ void GC::debug(){
 
 //not done
 void GC::markFull(){
-	cleanupColors();
+  reset();
 
 	//std::vector<GCHandle*> tempRoots(roots);
 
@@ -384,5 +387,8 @@ void GCAllocator::deconstruct(T* ptr){
 
 template <class T>
 GCHandle<T>* GCHandle<T>::clone(){
-	return gc->registerHandle(this);
+  return gc->registerHandle(this);
 }
+
+
+template GCHandle<ECMAValue>* GCHandle<ECMAValue>::clone();
